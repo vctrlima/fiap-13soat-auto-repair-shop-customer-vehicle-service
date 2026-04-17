@@ -1,4 +1,4 @@
-import { Vehicle } from '@/domain/entities';
+import { Vehicle } from "@/domain/entities";
 
 export interface GetAllVehicles {
   getAll: (params: GetAllVehicles.Params) => Promise<GetAllVehicles.Result>;
@@ -9,11 +9,12 @@ export namespace GetAllVehicles {
     page: number;
     limit: number;
     orderBy?: string;
-    orderDirection?: 'asc' | 'desc';
+    orderDirection?: "asc" | "desc";
     customerId?: string;
     licensePlate?: string;
     brand?: string;
     model?: string;
+    year?: number;
   };
   export type Result = {
     content: Vehicle[];

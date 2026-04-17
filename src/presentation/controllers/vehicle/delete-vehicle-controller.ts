@@ -1,7 +1,11 @@
-import { DeleteVehicle } from '@/domain/use-cases';
-import { NotFoundError } from '@/presentation/errors';
-import { noContent, notFound, serverError } from '@/presentation/helpers';
-import { Controller, HttpRequest, HttpResponse } from '@/presentation/protocols';
+import { DeleteVehicle } from "@/domain/use-cases";
+import { NotFoundError } from "@/presentation/errors";
+import { noContent, notFound, serverError } from "@/presentation/helpers";
+import {
+  Controller,
+  HttpRequest,
+  HttpResponse,
+} from "@/presentation/protocols";
 
 export class DeleteVehicleController implements Controller {
   constructor(private readonly deleteVehicle: DeleteVehicle) {}
@@ -19,4 +23,4 @@ export class DeleteVehicleController implements Controller {
 }
 
 type Request = HttpRequest<DeleteVehicle.Params>;
-type Response = HttpResponse<DeleteVehicle.Result>;
+type Response = HttpResponse;

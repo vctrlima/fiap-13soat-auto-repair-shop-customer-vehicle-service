@@ -1,7 +1,11 @@
-import { DeleteCustomer } from '@/domain/use-cases';
-import { NotFoundError } from '@/presentation/errors';
-import { noContent, notFound, serverError } from '@/presentation/helpers';
-import { Controller, HttpRequest, HttpResponse } from '@/presentation/protocols';
+import { DeleteCustomer } from "@/domain/use-cases";
+import { NotFoundError } from "@/presentation/errors";
+import { noContent, notFound, serverError } from "@/presentation/helpers";
+import {
+  Controller,
+  HttpRequest,
+  HttpResponse,
+} from "@/presentation/protocols";
 
 export class DeleteCustomerController implements Controller {
   constructor(private readonly deleteCustomer: DeleteCustomer) {}
@@ -19,4 +23,4 @@ export class DeleteCustomerController implements Controller {
 }
 
 type Request = HttpRequest<DeleteCustomer.Params>;
-type Response = HttpResponse<DeleteCustomer.Result>;
+type Response = HttpResponse;

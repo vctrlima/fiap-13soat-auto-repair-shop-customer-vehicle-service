@@ -3,3 +3,4 @@ dist
 .env
 test-output
 coverage
+.DS_Store

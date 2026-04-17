@@ -4,10 +4,10 @@ import {
   GetAllVehiclesRepository,
   GetVehicleByIdRepository,
   UpdateVehicleRepository,
-} from '@/application/protocols/db';
-import { NotFoundError } from '@/presentation/errors';
-import { PrismaClient } from '@prisma/client';
-import { VehicleRepositoryType } from '../types';
+} from "@/application/protocols/db";
+import { NotFoundError } from "@/presentation/errors";
+import { PrismaClient } from "@prisma/client";
+import { VehicleRepositoryType } from "../types";
 
 export class PrismaVehicleRepository
   implements
@@ -19,7 +19,9 @@ export class PrismaVehicleRepository
 {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async create(params: CreateVehicleRepository.Params): Promise<CreateVehicleRepository.Result> {
+  async create(
+    params: CreateVehicleRepository.Params,
+  ): Promise<CreateVehicleRepository.Result> {
     const { customerId, licensePlate, brand, model, year } = params;
     const vehicle = await this.prisma.vehicle.create({
       data: {
@@ -33,6 +35,7 @@ export class PrismaVehicleRepository
     });
     return {
       id: vehicle.id,
+      customerId: vehicle.customerId,
       customer: {
         ...vehicle.customer,
         vehicles: [],
@@ -47,20 +50,34 @@ export class PrismaVehicleRepository
     };
   }
 
-  async getAll(params: GetAllVehiclesRepository.Params): Promise<GetAllVehiclesRepository.Result> {
-    const { page = 1, limit = 10, licensePlate, brand, model, year, customerId } = params;
+  async getAll(
+    params: GetAllVehiclesRepository.Params,
+  ): Promise<GetAllVehiclesRepository.Result> {
+    const {
+      page = 1,
+      limit = 10,
+      licensePlate,
+      brand,
+      model,
+      year,
+      customerId,
+    } = params;
     const where = {
       ...(customerId && { customerId }),
       ...(licensePlate && { licensePlate: { contains: licensePlate } }),
-      ...(brand && { brand: { contains: brand, mode: 'insensitive' as const } }),
-      ...(model && { model: { contains: model, mode: 'insensitive' as const } }),
+      ...(brand && {
+        brand: { contains: brand, mode: "insensitive" as const },
+      }),
+      ...(model && {
+        model: { contains: model, mode: "insensitive" as const },
+      }),
       ...(year && { year }),
     };
     const [vehicles, total] = await Promise.all([
       this.prisma.vehicle.findMany({
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         include: { customer: true },
         where,
       }),
@@ -69,6 +86,7 @@ export class PrismaVehicleRepository
     return {
       content: vehicles.map((vehicle: VehicleRepositoryType) => ({
         id: vehicle.id,
+        customerId: vehicle.customerId,
         customer: {
           ...vehicle.customer,
           vehicles: [],
@@ -88,15 +106,18 @@ export class PrismaVehicleRepository
     };
   }
 
-  async getById(params: GetVehicleByIdRepository.Params): Promise<GetVehicleByIdRepository.Result> {
+  async getById(
+    params: GetVehicleByIdRepository.Params,
+  ): Promise<GetVehicleByIdRepository.Result> {
     const { id } = params;
     const vehicle = await this.prisma.vehicle.findUnique({
       where: { id },
       include: { customer: true },
     });
-    if (!vehicle) throw new NotFoundError('Vehicle not found');
+    if (!vehicle) throw new NotFoundError("Vehicle not found");
     return {
       id: vehicle.id,
+      customerId: vehicle.customerId,
       customer: {
         ...vehicle.customer,
         vehicles: [],
@@ -111,13 +132,15 @@ export class PrismaVehicleRepository
     };
   }
 
-  async update(params: UpdateVehicleRepository.Params): Promise<UpdateVehicleRepository.Result> {
+  async update(
+    params: UpdateVehicleRepository.Params,
+  ): Promise<UpdateVehicleRepository.Result> {
     const { id, brand, model, year } = params;
     const vehicle = await this.prisma.vehicle.findUnique({
       where: { id },
       include: { customer: true },
     });
-    if (!vehicle) throw new NotFoundError('Vehicle not found');
+    if (!vehicle) throw new NotFoundError("Vehicle not found");
     const updatedVehicle = await this.prisma.vehicle.update({
       where: { id },
       data: {
@@ -129,6 +152,7 @@ export class PrismaVehicleRepository
     });
     return {
       id: updatedVehicle.id,
+      customerId: updatedVehicle.customerId,
       customer: {
         ...updatedVehicle.customer,
         vehicles: [],
@@ -149,7 +173,7 @@ export class PrismaVehicleRepository
       where: { id },
       include: { customer: true },
     });
-    if (!vehicle) throw new NotFoundError('Vehicle not found');
+    if (!vehicle) throw new NotFoundError("Vehicle not found");
     await this.prisma.vehicle.delete({ where: { id } });
   }
 }
