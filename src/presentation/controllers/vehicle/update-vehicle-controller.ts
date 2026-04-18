@@ -30,5 +30,5 @@ export class UpdateVehicleController implements Controller {
   }
 }
 
-type Request = HttpRequest<UpdateVehicle.Params>;
+type Request = HttpRequest<Omit<UpdateVehicle.Params, 'id'>>;
 type Response = HttpResponse<UpdateVehicle.Result>;

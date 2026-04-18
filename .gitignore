@@ -4,3 +4,4 @@ dist
 test-output
 coverage
 .DS_Store
+out-tsc

@@ -31,5 +31,5 @@ export class UpdateCustomerController implements Controller {
   }
 }
 
-type Request = HttpRequest<UpdateCustomer.Params>;
+type Request = HttpRequest<Partial<UpdateCustomer.Params>>;
 type Response = HttpResponse<UpdateCustomer.Result>;
