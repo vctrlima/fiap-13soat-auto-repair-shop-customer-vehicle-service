@@ -18,7 +18,7 @@ module.exports = {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
   moduleFileExtensions: ["ts", "js", "html"],
-  coverageDirectory: "test-output/jest/coverage",
+  coverageDirectory: "coverage",
   testPathIgnorePatterns: ["<rootDir>/e2e/"],
   transformIgnorePatterns: ["node_modules/(?!(@swc|@faker-js)/)"],
   collectCoverage: true,
