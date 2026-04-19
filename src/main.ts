@@ -1,20 +1,21 @@
-import './infra/observability/tracing';
+import "./infra/observability/tracing";
 
-import Fastify from 'fastify';
-import { app } from './main/config/app';
+import Fastify from "fastify";
+import { randomUUID } from "node:crypto";
 import {
+  correlationFields,
+  getRequestContext,
   httpRequestCounter,
   httpRequestDuration,
-  getRequestContext,
-  correlationFields,
-} from './infra/observability';
+} from "./infra/observability";
+import { app } from "./main/config/app";
 
-const host = process.env.HOST ?? 'localhost';
+const host = process.env.HOST ?? "localhost";
 const port = process.env.SERVER_PORT ? Number(process.env.SERVER_PORT) : 3001;
 
 const server = Fastify({
   logger: {
-    level: process.env.LOG_LEVEL || 'info',
+    level: process.env.LOG_LEVEL || "info",
     formatters: {
       level(label: string) {
         return { level: label };
@@ -31,24 +32,26 @@ const server = Fastify({
       },
     },
   },
-  requestIdHeader: 'x-request-id',
-  genReqId: () => require('crypto').randomUUID(),
+  requestIdHeader: "x-request-id",
+  genReqId: () => randomUUID(),
 });
 
-server.addHook('onRequest', async (request) => {
-  const ctx = getRequestContext(request.id as string);
+server.addHook("onRequest", async (request) => {
+  const ctx = getRequestContext(request.id);
   request.log = request.log.child(correlationFields(ctx));
   (request as any).__startTime = process.hrtime.bigint();
 });
 
-server.addHook('onResponse', async (request, reply) => {
+server.addHook("onResponse", async (request, reply) => {
   const startTime = (request as any).__startTime as bigint | undefined;
-  const durationMs = startTime ? Number(process.hrtime.bigint() - startTime) / 1_000_000 : 0;
+  const durationMs = startTime
+    ? Number(process.hrtime.bigint() - startTime) / 1_000_000
+    : 0;
 
   const attributes = {
-    'http.method': request.method,
-    'http.route': request.routeOptions?.url || request.url,
-    'http.status_code': reply.statusCode,
+    "http.method": request.method,
+    "http.route": request.routeOptions?.url || request.url,
+    "http.status_code": reply.statusCode,
   };
 
   httpRequestCounter.add(1, attributes);
