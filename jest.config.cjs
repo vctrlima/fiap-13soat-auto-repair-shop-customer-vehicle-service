@@ -15,6 +15,7 @@ module.exports = {
     "^.+\\.[tj]s$": ["@swc/jest", swcJestConfig],
   },
   moduleNameMapper: {
+    "^(\\.\\.?/.*)\\.js$": "$1",
     "^@/(.*)$": "<rootDir>/src/$1",
   },
   moduleFileExtensions: ["ts", "js", "html"],

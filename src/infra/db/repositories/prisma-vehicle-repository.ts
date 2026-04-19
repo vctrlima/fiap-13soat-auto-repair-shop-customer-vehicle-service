@@ -5,8 +5,8 @@ import {
   GetVehicleByIdRepository,
   UpdateVehicleRepository,
 } from "@/application/protocols/db";
+import { PrismaClient } from "@/generated/prisma/client";
 import { NotFoundError } from "@/presentation/errors";
-import { PrismaClient } from "@prisma/client";
 import { VehicleRepositoryType } from "../types";
 
 export class PrismaVehicleRepository

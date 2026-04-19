@@ -5,3 +5,4 @@ test-output
 coverage
 .DS_Store
 out-tsc
+src/generated

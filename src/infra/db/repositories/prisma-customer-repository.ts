@@ -5,10 +5,10 @@ import {
   GetCustomerByDocumentRepository,
   UpdateCustomerRepository,
 } from "@/application/protocols/db";
+import { PrismaClient } from "@/generated/prisma/client";
 import { CustomerRepositoryMapper } from "@/infra/db/mappers";
 import { CustomerRepositoryType } from "@/infra/db/types";
 import { NotFoundError } from "@/presentation/errors";
-import { PrismaClient } from "@prisma/client";
 
 type CustomerRepository = CreateCustomerRepository &
   GetAllCustomersRepository &
