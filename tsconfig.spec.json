@@ -1,15 +1,12 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "composite": true,
     "outDir": "out-tsc",
     "module": "nodenext",
     "types": ["jest", "node"],
     "rootDir": ".",
     "moduleResolution": "nodenext"
   },
-  "include": [
-    "src/**/*.spec.ts",
-    "src/**/*.test.ts",
-    "src/**/*.d.ts"
-  ]
+  "include": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/*.d.ts"]
 }
