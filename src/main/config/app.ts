@@ -1,5 +1,6 @@
 import { registerAuthHook } from "@/main/middlewares/auth-hook";
 import { customerRoutes, vehicleRoutes } from "@/main/routes";
+import internalRoutes from "@/main/routes/internal-routes";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
@@ -34,6 +35,10 @@ export async function app(fastify: FastifyInstance, _opts: AppOptions) {
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   });
+
+  // Internal routes are registered BEFORE the auth hook so they bypass JWT validation.
+  // They are accessible only via the ALB path rule and not exposed through API Gateway.
+  fastify.register(internalRoutes, { prefix: "/internal" });
 
   registerAuthHook(fastify, env.jwtSecret);
 

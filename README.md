@@ -1,6 +1,6 @@
 # Customer & Vehicle Service
 
-> Microserviço responsável pelo cadastro e gestão de clientes e veículos da oficina, servindo também como fonte de dados para autenticação via Lambda.
+> Microserviço responsável pelo cadastro e gestão de clientes e veículos da oficina, expondo também um endpoint interno utilizado pela Lambda de autenticação.
 
 ## Sumário
 
@@ -24,7 +24,7 @@ O **Customer & Vehicle Service** é o repositório central de clientes e veícul
 
 1. **Gerenciar clientes** — criação, consulta e atualização de dados cadastrais (nome, CPF, e-mail, telefone)
 2. **Gerenciar veículos** — associação de veículos a clientes (placa, marca, modelo, ano)
-3. **Prover dados para autenticação** — a mesma base de dados é consultada pela Lambda de autenticação CPF
+3. **Expor endpoint interno para autenticação** — a Lambda CPF Auth consulta `GET /internal/customers/:document` sem JWT
 
 ### Problema que Resolve
 
@@ -36,11 +36,11 @@ O cadastro de clientes e veículos é o ponto de entrada do ciclo de serviço: s
 
 ### Papel na Arquitetura
 
-| Papel                      | Descrição                                                            |
-| -------------------------- | -------------------------------------------------------------------- |
-| **Master data**            | Fonte de verdade para dados de clientes e veículos                   |
-| **Provedor de identidade** | A tabela `Customer` é consultada pela Lambda via CPF para emitir JWT |
-| **API REST pura**          | Sem mensageria — toda comunicação é síncrona via HTTP                |
+| Papel                      | Descrição                                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Master data**            | Fonte de verdade para dados de clientes e veículos                                                      |
+| **Provedor de identidade** | Endpoint interno `GET /internal/customers/:document` usado pela Lambda para autenticar clientes por CPF |
+| **API REST pura**          | Sem mensageria — toda comunicação é síncrona via HTTP                                                   |
 
 ---
 
@@ -103,26 +103,29 @@ Este serviço **não publica nem consome eventos**. Toda comunicação é síncr
 
 ### Endpoints REST
 
-| Método   | Rota                 | Descrição             | Auth    |
-| -------- | -------------------- | --------------------- | ------- |
-| `POST`   | `/api/customers`     | Criar cliente         | JWT     |
-| `GET`    | `/api/customers`     | Listar clientes       | JWT     |
-| `GET`    | `/api/customers/:id` | Buscar cliente por ID | JWT     |
-| `PUT`    | `/api/customers/:id` | Atualizar cliente     | JWT     |
-| `DELETE` | `/api/customers/:id` | Remover cliente       | JWT     |
-| `POST`   | `/api/vehicles`      | Criar veículo         | JWT     |
-| `GET`    | `/api/vehicles`      | Listar veículos       | JWT     |
-| `GET`    | `/api/vehicles/:id`  | Buscar veículo por ID | JWT     |
-| `PUT`    | `/api/vehicles/:id`  | Atualizar veículo     | JWT     |
-| `DELETE` | `/api/vehicles/:id`  | Remover veículo       | JWT     |
-| `GET`    | `/health`            | Health check          | Público |
+| Método   | Rota                            | Descrição                            | Auth      |
+| -------- | ------------------------------- | ------------------------------------ | --------- |
+| `POST`   | `/api/customers`                | Criar cliente                        | JWT       |
+| `GET`    | `/api/customers`                | Listar clientes                      | JWT       |
+| `GET`    | `/api/customers/:id`            | Buscar cliente por ID                | JWT       |
+| `PUT`    | `/api/customers/:id`            | Atualizar cliente                    | JWT       |
+| `DELETE` | `/api/customers/:id`            | Remover cliente                      | JWT       |
+| `POST`   | `/api/vehicles`                 | Criar veículo                        | JWT       |
+| `GET`    | `/api/vehicles`                 | Listar veículos                      | JWT       |
+| `GET`    | `/api/vehicles/:id`             | Buscar veículo por ID                | JWT       |
+| `PUT`    | `/api/vehicles/:id`             | Atualizar veículo                    | JWT       |
+| `DELETE` | `/api/vehicles/:id`             | Remover veículo                      | JWT       |
+| `GET`    | `/internal/customers/:document` | Buscar cliente por CPF (uso interno) | Público\* |
+| `GET`    | `/health`                       | Health check                         | Público   |
+
+> \* O endpoint `/internal/*` não exige JWT e não aparece no Swagger. Ele é acessível apenas dentro da VPC via ALB (path `/internal/*` não é exposto pelo API Gateway).
 
 ### Dependências de Runtime
 
-| Serviço               | Tipo de Dependência        | Descrição                                           |
-| --------------------- | -------------------------- | --------------------------------------------------- |
-| **Lambda (CPF Auth)** | Compartilha banco de dados | Lê tabela `Customer` por CPF para autenticar        |
-| **API Gateway**       | Proxy HTTP                 | Roteia chamadas externas; valida JWT via authorizer |
+| Serviço               | Tipo de Dependência     | Descrição                                                         |
+| --------------------- | ----------------------- | ----------------------------------------------------------------- |
+| **Lambda (CPF Auth)** | HTTP (interno, sem JWT) | Chama `GET /internal/customers/:document` para autenticar por CPF |
+| **API Gateway**       | Proxy HTTP              | Roteia chamadas externas; valida JWT via authorizer               |
 
 ---
 
@@ -165,15 +168,15 @@ sequenceDiagram
     actor User
     participant AGW as API Gateway
     participant Lambda as Lambda CPF Auth
-    participant PG as PostgreSQL\ncustomer_vehicle_db
+    participant CVS as Customer & Vehicle Service
     participant SVC as Customer & Vehicle Service
 
     User->>AGW: POST /api/auth/cpf {cpf}
     AGW->>Lambda: Invoke
-    Lambda->>PG: SELECT * FROM Customer WHERE document = cpf
-    PG-->>Lambda: Customer record
-    Lambda-->>AGW: JWT {sub, name, email, cpf}
-    AGW-->>User: 200 {token}
+    Lambda->>CVS: GET /internal/customers/:document
+    CVS-->>Lambda: 200 Customer | 404 Not Found
+    Lambda-->>AGW: JWT {sub, name, email, cpf} | 404
+    AGW-->>User: 200 {token} | 404
 
     User->>AGW: GET /api/customers (Authorization: Bearer token)
     AGW->>AGW: Validate JWT (authorizer)
@@ -246,17 +249,13 @@ yarn test --coverage
 
 ## 7. Pontos de Atenção
 
-### Banco Compartilhado com Lambda
+### Endpoint Interno para Lambda
 
-A Lambda de autenticação CPF acessa diretamente o banco `customer_vehicle_db` (tabela `Customer`). Isso significa que:
-
-- **Migrações de schema** precisam ser compatíveis com a Lambda
-- O campo `document` (CPF) é a chave de negócio usada para autenticação — não deve ser renomeado ou removido
-- A Lambda não usa Prisma — usa queries SQL puras via `pg`
+O endpoint `GET /internal/customers/:document` é registrado **antes do hook JWT** no Fastify, portanto não exige token. Ele aceita CPF (11 dígitos) ou CNPJ (14 dígitos) como parâmetro. O roteamento do ALB encaminha o prefixo `/internal/*` diretamente ao Customer & Vehicle Service, e esse caminho **não está exposto pelo API Gateway** — só pode ser acessado dentro da VPC.
 
 ### CPF como Identificador Único
 
-O campo `document` tem constraint `UNIQUE` no banco. Tentativas de cadastrar um cliente com CPF já existente retornam `409 Conflict`. O serviço **não valida o algoritmo do CPF** (verificação de dígitos) — essa validação fica a cargo da Lambda.
+O campo `document` tem constraint `UNIQUE` no banco. Tentativas de cadastrar um cliente com CPF já existente retornam `409 Conflict`. O serviço **não valida o algoritmo do CPF** (verificação de dígitos) — essa validação fica a cargo da Lambda antes de chamar este serviço.
 
 ### Ausência de Soft Delete
 
@@ -272,7 +271,8 @@ O endpoint `GET /api/customers` e `GET /api/vehicles` retornam todos os registro
 
 ### Segurança
 
-- **JWT obrigatório** em todos os endpoints (exceto `/health`)
+- **JWT obrigatório** em todos os endpoints (exceto `/health` e `/internal/*`)
+- O prefixo `/internal/*` não é exposto pelo API Gateway — acessível apenas dentro da VPC
 - **@fastify/helmet**, **@fastify/rate-limit**, **@fastify/cors** habilitados
 - Nenhuma senha ou dado sensível armazenado
 
