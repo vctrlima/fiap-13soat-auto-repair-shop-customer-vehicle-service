@@ -23,7 +23,7 @@ export default async function customerRoutes(fastify: FastifyInstance) {
             name: { type: 'string', minLength: 2, maxLength: 100 },
             document: { type: 'string', pattern: '^[0-9]{11}$|^[0-9]{14}$' },
             email: { type: 'string', format: 'email' },
-            phone: { type: 'string', nullable: true, pattern: '^\\+?[0-9]{10,15}$' },
+            phone: { type: 'string', nullable: true, pattern: String.raw`^\+?[0-9]{10,15}$` },
           },
           required: ['name', 'document', 'email'],
         },

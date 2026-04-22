@@ -36,8 +36,6 @@ export async function app(fastify: FastifyInstance, _opts: AppOptions) {
     credentials: true,
   });
 
-  // Internal routes are registered BEFORE the auth hook so they bypass JWT validation.
-  // They are accessible only via the ALB path rule and not exposed through API Gateway.
   fastify.register(internalRoutes, { prefix: "/internal" });
 
   registerAuthHook(fastify, env.jwtSecret);
