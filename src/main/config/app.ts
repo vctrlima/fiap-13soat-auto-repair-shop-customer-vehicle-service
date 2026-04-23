@@ -54,7 +54,7 @@ export async function app(fastify: FastifyInstance, _opts: AppOptions) {
   fastify.register(customerRoutes, { prefix: "/api/customers" });
   fastify.register(vehicleRoutes, { prefix: "/api/vehicles" });
 
-  fastify.get("/health", async () => ({
+  fastify.get("/health", { schema: { security: [] } }, async () => ({
     status: "UP",
     timestamp: new Date().toISOString(),
   }));
