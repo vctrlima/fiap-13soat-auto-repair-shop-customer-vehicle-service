@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import jwt from "jsonwebtoken";
 
-const PUBLIC_PATHS = ["/health", "/docs"];
+const PUBLIC_PATHS = ["/health", "/docs", "/internal"];
 
 /**
  * Write methods that require admin role (type: 'admin' in the JWT).
