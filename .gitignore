@@ -4,5 +4,6 @@ dist
 test-output
 coverage
 .DS_Store
+**/.DS_Store
 out-tsc
 src/generated
